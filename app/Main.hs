@@ -1,15 +1,15 @@
 module Main where
 
+import Control.Monad ((>=>))
+
 import Infer
+import Parse
 import Pretty
-import Types
+
 
 main :: IO ()
-main = printType letrecInf
+main = printType prog
   where
-    printType = putStrLn . pretty . either error id . infer
-    -- expr = App (Lam [VarIdent "y"] (Var (VarIdent "y"))) [Lam [VarIdent "x"] (Var (VarIdent "x"))]
-    letrecInf =
-      Letrec
-        (VarIdent "f") (Lam [VarIdent "x"] (App (Var (VarIdent "f")) [Var (VarIdent "x")]))
-        (App (Var (VarIdent "f")) [Lam [VarIdent "y"] (Var (VarIdent "y"))])
+    printType = putStrLn . pretty . either error id . (parse "input" >=> infer)
+    -- expr = "((lambda (y) y) (lambda (x) x))"
+    prog = "(letrec [f (lambda (x) (f x))] (f (lambda (y) y)))"

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4a1fefd06923c57fe0729b041ee718fe3874e4cc959f427e5bf895a86f8ad6db
+-- hash: 7a448d430c430540e02908db9e453c41df691041e57cf94d23fcc26d4b96a279
 
 name:           inference
 version:        0.1.0.0
@@ -28,6 +28,8 @@ source-repository head
 library
   exposed-modules:
       Infer
+      Parse
+      ParseLisp
       Pretty
       Scope
       Types
@@ -38,6 +40,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , megaparsec
     , mtl
   default-language: Haskell2010
 
@@ -52,6 +55,7 @@ executable inference-exe
       base >=4.7 && <5
     , containers
     , inference
+    , megaparsec
     , mtl
   default-language: Haskell2010
 
@@ -67,5 +71,6 @@ test-suite inference-test
       base >=4.7 && <5
     , containers
     , inference
+    , megaparsec
     , mtl
   default-language: Haskell2010
