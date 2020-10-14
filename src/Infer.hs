@@ -59,7 +59,7 @@ generalize env monoType = PolyType (Set.toList (freeTVars monoType `Set.differen
 -- | Results in an error if the types cannot be unified or a substitution if they can be
 unify :: MonadError String m => MonoType -> MonoType -> m Subs
 unify (TVar ident) term = mkSub ident term
-unify term (TVar id) = mkSub id term
+unify term (TVar ident) = mkSub ident term
 unify (TLam argsA retA) (TLam argsB retB) = do
   subs <- unify retA retB
   unifyAll subs argsA argsB
@@ -73,15 +73,15 @@ unifyAll subs (a:as) (b:bs) = do
   unifyAll (Map.union subs subs') as bs
 unifyAll _ _ _ = throwError "Type Error: Arity mismatch"
 
--- | Build a substitution for the typevar id in the given monotype
+-- | Build a substitution for the typevar ident in the given monotype
 mkSub :: MonadError String m => TVarIdent -> MonoType -> m Subs
 mkSub ident monotype
   | monotype == TVar ident = return Map.empty
-  | occurs ident monotype = throwError $ "Cannot create infinite type: " ++ pretty (TVar ident) ++ " = " ++ pretty monotype
+  | occurs = throwError $ "Cannot create infinite type: " ++ pretty (TVar ident) ++ " = " ++ pretty monotype
   | otherwise = return $ Map.singleton ident monotype
   where
-    occurs :: TVarIdent -> MonoType -> Bool
-    occurs ident monotype = Set.member ident $ freeTVars monotype
+    occurs :: Bool
+    occurs = Set.member ident $ freeTVars monotype
 
 
 subMonoType :: Subs -> MonoType -> MonoType
@@ -131,6 +131,16 @@ inferRec env expr = case expr of
     (bodySubs, bodyType) <- inferRec env' body
     return (Map.union valueSubs bodySubs, bodyType)
 
+  Letrec name value body -> do
+    freshValueType <- lift fresh
+    let valueEnv = Map.insert name (PolyType [] freshValueType) env
+    (s1, valueType) <- contextualize expr $ inferRec valueEnv value
+    s2 <- unify valueType (subMonoType s1 freshValueType)
+    let env' = Map.map (subPolyType (Map.union s1 s2)) env
+        bodyEnv = Map.insert name (generalize env' (subMonoType s2 valueType)) env'
+    (s3, bodyType) <- contextualize expr $ inferRec bodyEnv body
+    return (Map.unions [s1, s2, s3], bodyType)
+
   -- Check all args and func, then unify
   App f args -> do
     (baseSubs, fType) <- contextualize expr $ inferRec env f
@@ -142,8 +152,8 @@ inferRec env expr = case expr of
   where
     recurseArgs :: Subs -> TypeEnv -> [Expr] -> ExceptT String Infer (Subs, [MonoType])
     recurseArgs subs _ [] = return (subs, [])
-    recurseArgs subs env (arg:args) = do
-      (subs', argType) <- contextualize expr $ inferRec (Map.map (subPolyType subs) env) arg
+    recurseArgs subs baseEnv (arg:args) = do
+      (subs', argType) <- contextualize expr $ inferRec (Map.map (subPolyType subs) baseEnv) arg
       let ourSubs = Map.union subs subs'
-      (otherSubs, argTypes) <- recurseArgs ourSubs (Map.map (subPolyType ourSubs) env) args
+      (otherSubs, argTypes) <- recurseArgs ourSubs (Map.map (subPolyType ourSubs) baseEnv) args
       return (Map.union ourSubs otherSubs, argType : argTypes)

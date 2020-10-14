@@ -20,6 +20,7 @@ instance Pretty Expr where
     where
       argNames = map (\(VarIdent name) -> name) args
   pretty (Let (VarIdent name) value body) = "(let [" ++ name ++ " " ++ pretty value ++ "] " ++ pretty body ++ ")"
+  pretty (Letrec (VarIdent name) value body) = "(letrec [" ++ name ++ " " ++ pretty value ++ "] " ++ pretty body ++ ")"
   pretty (App fn args) = "(" ++ pretty fn ++ " " ++ intercalate " " (map pretty args) ++ ")"
 
 instance Pretty MonoType where

@@ -6,6 +6,7 @@ data Expr
   = Var VarIdent
   | Lam [VarIdent] Expr
   | Let VarIdent Expr Expr
+  | Letrec VarIdent Expr Expr
   | App Expr [Expr]
   deriving (Show, Eq, Ord)
 
