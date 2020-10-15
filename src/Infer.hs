@@ -20,6 +20,10 @@ type Subs = Map TVarIdent MonoType
 data InferState = InferState TVarIdent Subs
 type Infer = State InferState
 
+-- | Core types
+numType :: MonoType
+numType = TApp "Num" []
+
 -- | Create a fresh type variable
 fresh :: Infer MonoType
 fresh = do
@@ -113,6 +117,8 @@ inferRec env expr = case expr of
   Var ident -> case Map.lookup ident env of
     Nothing -> throwError $ "Undefined Variable: " ++ show ident
     (Just polyType) -> lift $ (Map.empty,) <$> instantiate polyType
+
+  NumExp _ -> return (Map.empty, numType)
 
   -- typecheck the body with the argNames bound to new typevars in the environment
   Lam argNames body -> do

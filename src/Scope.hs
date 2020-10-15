@@ -17,6 +17,7 @@ deleteAll = foldl' $ flip Set.delete
 
 freeVars :: Expr -> Set VarIdent
 freeVars (Var name) = Set.singleton name
+freeVars (NumExp _) = Set.empty
 freeVars (Lam args body) = deleteAll (freeVars body) args
 freeVars (Let name value body) = freeVars value `Set.union` Set.delete name (freeVars body)
 freeVars (Letrec name value body) = Set.delete name $ freeVars value `Set.union` freeVars body

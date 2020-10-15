@@ -18,7 +18,7 @@ translate :: MonadFail m => Lisp -> m Expr
 translate sym@(Symbol _) =
   Var <$> parseIdentifier sym
 translate (String s) = fail $ "Unexpected string" ++ show s
-translate (Number n) = fail $ "Unexpected number" ++ show n
+translate (Number n) = return $ NumExp n
 translate (Float f) = fail $ "Unexpected float" ++ show f
 translate (List []) = fail "Unexpected nil"
 translate (List [Symbol "lambda", List args, body]) =

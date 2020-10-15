@@ -4,6 +4,7 @@ newtype VarIdent = VarIdent String deriving (Show, Eq, Ord)
 
 data Expr
   = Var VarIdent
+  | NumExp Integer
   | Lam [VarIdent] Expr
   | Let VarIdent Expr Expr
   | Letrec VarIdent Expr Expr

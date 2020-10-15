@@ -16,6 +16,7 @@ class Pretty a where
 
 instance Pretty Expr where
   pretty (Var (VarIdent name)) = name
+  pretty (NumExp n) = show n
   pretty (Lam args body) = "(λ (" ++ intercalate " " argNames ++ ") " ++ pretty body ++ ")"
     where
       argNames = map (\(VarIdent name) -> name) args

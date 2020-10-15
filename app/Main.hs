@@ -6,10 +6,11 @@ import Infer
 import Parse
 import Pretty
 
+printType :: String -> IO ()
+printType = putStrLn . either id pretty . (parse "input" >=> infer)
 
 main :: IO ()
 main = printType prog
   where
-    printType = putStrLn . pretty . either error id . (parse "input" >=> infer)
     -- expr = "((lambda (y) y) (lambda (x) x))"
     prog = "(letrec [f (lambda (x) (f x))] (f (lambda (y) y)))"
