@@ -41,7 +41,7 @@ contextualize :: (Pretty c, MonadError String m) => c -> m a -> m a
 contextualize context comp = catchError comp (\err -> throwError $ err ++ "\n  in " ++ pretty context)
 
 
--- | Instantiate a polytype by creating fresh monotypes for all its arguments and subing them in
+-- | Instantiate a polytype by creating fresh monotypes for all its arguments and subbing them in
 instantiate :: PolyType -> Infer MonoType
 instantiate (PolyType idents term) = do
   freshTVars <- mapM (const fresh) idents
@@ -112,7 +112,7 @@ unify a b = do
 unifyAll :: [MonoType] -> [MonoType] -> ExceptT String Infer ()
 unifyAll [] [] = return ()
 unifyAll (a:as) (b:bs) = unify a b >> unifyAll as bs
-unifyAll _ _ = throwError $ "Type Error: Arity mismatch"
+unifyAll _ _ = throwError "Type Error: Arity mismatch"
 
 
 -- | Infer the type of an expression
@@ -136,7 +136,7 @@ inferRec env expr = do
 
     NumExp _ -> return numType
 
-    -- typecheck the body with the argNames bound to new typevars in the environment
+    -- typecheck the body with the argNames bound to new type vars in the environment
     Lam argNames body -> do
       argTypes <- lift $ mapM (const fresh) argNames
       let bindings = Map.fromList $ zip argNames (map (PolyType []) argTypes)
@@ -149,8 +149,7 @@ inferRec env expr = do
       valueType <- inferRec env value
       polyType <- lift $ generalize env valueType
       let env' = Map.insert name polyType env
-      bodyType <- inferRec env' body
-      return bodyType
+      inferRec env' body
 
     Letrec name value body -> do
       freshValueType <- lift fresh
@@ -182,6 +181,6 @@ inferRec env expr = do
   where
     prettyState s = "\n  env - " ++ prettyEnv ++ "\n  var - " ++ prettySub s
     prettyEnv = intercalate "\n        " $ map prettyEnvEntry $ Map.toList env
-    prettyEnvEntry ((VarIdent name), t) = name ++ ": " ++ pretty t
+    prettyEnvEntry (VarIdent name, t) = name ++ ": " ++ pretty t
     prettySub = intercalate "\n        " . map prettySubEntry . Map.toList
     prettySubEntry (tv, t) = pretty (TVar tv) ++ ": " ++ pretty t
