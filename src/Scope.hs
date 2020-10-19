@@ -22,6 +22,7 @@ freeVars (Lam args body) = deleteAll (freeVars body) args
 freeVars (Let name value body) = freeVars value `Set.union` Set.delete name (freeVars body)
 freeVars (Letrec name value body) = Set.delete name $ freeVars value `Set.union` freeVars body
 freeVars (App func args) = freeVars func `Set.union` Set.unions (map freeVars args)
+freeVars (If0 c t f) = Set.unions [freeVars c, freeVars t, freeVars f]
 
 
 freeTVars :: MonoType -> Set TVarIdent

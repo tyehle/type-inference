@@ -27,12 +27,14 @@ translate (List [Symbol "let", List [name, value], body]) =
   Let <$> parseIdentifier name <*> translate value <*> translate body
 translate (List [Symbol "letrec", List [name, value], body]) =
   Letrec <$> parseIdentifier name <*> translate value <*> translate body
+translate (List [Symbol "if0", c, t, f]) =
+  If0 <$> translate c <*> translate t <*> translate f
 translate (List (fn : args)) =
   App <$> translate fn <*> mapM translate args
 
 
 keywords :: [String]
-keywords = ["let", "letrec", "lambda"]
+keywords = ["let", "letrec", "lambda", "if0"]
 
 parseIdentifier :: MonadFail m => Lisp -> m VarIdent
 parseIdentifier (Symbol name)

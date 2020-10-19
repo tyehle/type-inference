@@ -23,10 +23,11 @@ instance Pretty Expr where
   pretty (Let (VarIdent name) value body) = "(let [" ++ name ++ " " ++ pretty value ++ "] " ++ pretty body ++ ")"
   pretty (Letrec (VarIdent name) value body) = "(letrec [" ++ name ++ " " ++ pretty value ++ "] " ++ pretty body ++ ")"
   pretty (App fn args) = "(" ++ pretty fn ++ " " ++ intercalate " " (map pretty args) ++ ")"
+  pretty (If0 c t f) = "(if0 " ++ pretty c ++ " " ++ pretty t ++ " " ++ pretty f ++ ")"
 
 instance Pretty MonoType where
   pretty (TVar (TVarIdent n)) = "τ" ++ subscript n
-  pretty (TLam argTypes retTypes) = intercalate " → " (map pretty $ argTypes ++ [retTypes])
+  pretty (TLam argTypes retType) = "(" ++ intercalate ", " (map pretty $ argTypes) ++ ") → " ++ pretty retType
   pretty (TApp name types) = intercalate " " $ name : map pretty types
 
 instance Pretty PolyType where

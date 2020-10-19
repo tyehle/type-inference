@@ -9,6 +9,7 @@ data Expr
   | Let VarIdent Expr Expr
   | Letrec VarIdent Expr Expr
   | App Expr [Expr]
+  | If0 Expr Expr Expr
   deriving (Show, Eq, Ord)
 
 newtype TVarIdent = TVarIdent Int deriving (Show, Eq, Ord)
