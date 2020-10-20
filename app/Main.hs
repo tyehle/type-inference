@@ -12,6 +12,6 @@ printType = putStrLn . either id pretty . (parse "input" >=> infer)
 main :: IO ()
 main = printType prog
   where
-    prog = "((lambda (y) y) (lambda (x) x))"
-    -- prog = "(letrec [f (lambda (x) (f x))] (f (lambda (y) y)))"
+    -- prog = "((lambda (y) y) (lambda (x) x))"
+    prog = "(letrec [f (lambda (x) (f x))] (f f))"
     -- prog = "(lambda (x) x)"

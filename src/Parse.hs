@@ -2,8 +2,8 @@ module Parse where
 
 import Data.Bifunctor (first)
 import Data.List (isPrefixOf)
-import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.Set (Set)
+import qualified Data.Set as Set
 import qualified Text.Megaparsec as M (errorBundlePretty, parse)
 
 import ParseLisp
@@ -25,46 +25,42 @@ translate expr = case expr of
   Float f -> fail $ "Unexpected float" ++ show f
   List [] -> fail "Unexpected nil"
   -- keywords
-  List (Symbol name : exprs) -> parseKeyword name exprs
+  List (Symbol name : exprs) | Set.member name keywords -> parseKeyword name exprs
   -- assume application if the list does not start with a keyword
   List (fn : args) -> App <$> translate fn <*> mapM translate args
 
 
+keywords :: Set String
+keywords = Set.fromList ["lambda", "let", "letrec", "if0"]
+
+
 parseKeyword :: MonadFail m => String -> [Lisp] -> m Expr
-parseKeyword name args = case Map.lookup name keywordParsingTable of
-  Nothing -> App <$> translate (Symbol name) <*> mapM translate args
-  Just parseFunction -> parseFunction args
+parseKeyword name exprs = case name of
+  "lambda" -> case exprs of
+    [List args, body] -> Lam <$> mapM parseIdentifier args <*> translate body
+    _ -> syntaxError
 
+  "let" -> case exprs of
+    [List [name, value], body] -> Let <$> parseIdentifier name <*> translate value <*> translate body
+    _ -> syntaxError
 
-keywordParsingTable :: MonadFail m => Map String ([Lisp] -> m Expr)
-keywordParsingTable = Map.fromList
-  [ ("lambda", \exprs -> case exprs of
-      [List args, body] -> Lam <$> mapM parseIdentifier args <*> translate body
-      _ -> syntaxFailure "lambda"
-    )
-  , ("let", \exprs -> case exprs of
-      [List [name, value], body] -> Let <$> parseIdentifier name <*> translate value <*> translate body
-      _ -> syntaxFailure "let"
-    )
-  , ("letrec", \exprs -> case exprs of
-      [List [name, value], body] -> Letrec <$> parseIdentifier name <*> translate value <*> translate body
-      _ -> syntaxFailure "letrec"
-    )
-  , ("if0", \exprs -> case exprs of
-      [c, t, f] -> If0 <$> translate c <*> translate t <*> translate f
-      _ -> syntaxFailure "if0"
-    )
-  ]
+  "letrec" -> case exprs of
+    [List [name, value], body] -> Letrec <$> parseIdentifier name <*> translate value <*> translate body
+    _ -> syntaxError
+
+  "if0" -> case exprs of
+    [c, t, f] -> If0 <$> translate c <*> translate t <*> translate f
+    _ -> syntaxError
+
+  _ -> fail $ "Unknown keyword: " ++ name
   where
-    syntaxFailure :: MonadFail m => String -> m a
-    syntaxFailure name = fail $ "Invalid syntax in " ++ name ++ " expression"
+    syntaxError = fail $ "Invalid syntax in " ++ name ++ " expression"
 
 
 parseIdentifier :: MonadFail m => Lisp -> m VarIdent
 parseIdentifier expr = case expr of
-  (Symbol name) | isKeyword name || isInvalid name -> fail $ "Invalid identifier: " ++ name
+  (Symbol name) | invalid name -> fail $ "Invalid identifier: " ++ name
   (Symbol name) -> return $ VarIdent name
   bad -> fail $ "Invalid identifier: " ++ show bad
   where
-    isKeyword name = Map.member name (keywordParsingTable :: Map String ([Lisp] -> Maybe Expr))
-    isInvalid name = isPrefixOf "__" name
+    invalid name = Set.member name keywords || isPrefixOf "__" name
