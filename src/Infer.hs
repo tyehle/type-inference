@@ -36,6 +36,13 @@ numType :: MonoType
 numType = TApp "Num" []
 
 
+-- | Type of a BinOp as if it were a bound variable
+binOpType :: BinOp -> PolyType
+binOpType _ = numericBinOpType
+  where
+    numericBinOpType = PolyType [] (TLam [numType, numType] numType)
+
+
 -- | Add some additional context to an error message
 contextualize :: (Pretty c, MonadError String m) => c -> m a -> m a
 contextualize context comp = catchError comp (\err -> throwError $ err ++ "\n  in " ++ pretty context)
@@ -160,21 +167,17 @@ inferRec env expr = do
       let bodyEnv = Map.insert name polyType env
       inferRec bodyEnv body
 
-    -- Check all args and func, then unify
     App f args -> do
       fType <- inferRec env f
-      argTypes <- mapM (inferRec env) args
-      retType <- lift fresh
-      unify fType (TLam argTypes retType)
-      return retType
+      inferCall env args $ PolyType [] fType
 
     If0 cond true false -> do
-      condType <- inferRec env cond
-      trueType <- inferRec env true
-      falseType <- inferRec env false
-      unify condType numType
-      unify trueType falseType
-      return trueType
+      let ident = TVarIdent 0
+          t = TVar ident
+          ifType = PolyType [ident] (TLam [numType, t, t] t)
+      inferCall env [cond, true, false] ifType
+
+    BinOp op a b -> inferCall env [a, b] (binOpType op)
 
   (InferState _ s2) <- get
   trace ("\n<<< " ++ pretty expr ++ " : " ++ pretty ret ++ prettyState s2) $ return ret
@@ -184,3 +187,12 @@ inferRec env expr = do
     prettyEnvEntry (VarIdent name, t) = name ++ ": " ++ pretty t
     prettySub = intercalate "\n        " . map prettySubEntry . Map.toList
     prettySubEntry (tv, t) = pretty (TVar tv) ++ ": " ++ pretty t
+
+
+inferCall :: TypeEnv -> [Expr] -> PolyType -> ExceptT String Infer MonoType
+inferCall env args fnPolyType = do
+  fnType <- lift $ instantiate fnPolyType
+  argTypes <- mapM (inferRec env) args
+  resultType <- lift fresh
+  unify fnType (TLam argTypes resultType)
+  return resultType

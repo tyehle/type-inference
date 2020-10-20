@@ -24,6 +24,14 @@ instance Pretty Expr where
   pretty (Letrec (VarIdent name) value body) = "(letrec [" ++ name ++ " " ++ pretty value ++ "] " ++ pretty body ++ ")"
   pretty (App fn args) = "(" ++ pretty fn ++ " " ++ unwords (map pretty args) ++ ")"
   pretty (If0 c t f) = "(if0 " ++ pretty c ++ " " ++ pretty t ++ " " ++ pretty f ++ ")"
+  pretty (BinOp op a b) = "(" ++ pretty op ++ " " ++ pretty a ++ " " ++ pretty b ++ ")"
+
+instance Pretty BinOp where
+  pretty Add = "+"
+  pretty Sub = "-"
+  pretty Mul = "*"
+  pretty Div = "/"
+  pretty Mod = "%"
 
 instance Pretty MonoType where
   pretty (TVar (TVarIdent n)) = "τ" ++ subscript n

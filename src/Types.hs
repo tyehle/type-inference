@@ -10,6 +10,15 @@ data Expr
   | Letrec VarIdent Expr Expr
   | App Expr [Expr]
   | If0 Expr Expr Expr
+  | BinOp BinOp Expr Expr
+  deriving (Show, Eq, Ord)
+
+data BinOp
+  = Add
+  | Sub
+  | Mul
+  | Div
+  | Mod
   deriving (Show, Eq, Ord)
 
 newtype TVarIdent = TVarIdent Int deriving (Show, Eq, Ord)

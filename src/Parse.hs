@@ -31,11 +31,11 @@ translate expr = case expr of
 
 
 keywords :: Set String
-keywords = Set.fromList ["lambda", "let", "letrec", "if0"]
+keywords = Set.fromList ["lambda", "let", "letrec", "if0", "+", "-", "*", "/", "%"]
 
 
 parseKeyword :: MonadFail m => String -> [Lisp] -> m Expr
-parseKeyword name exprs = case name of
+parseKeyword keyword exprs = case keyword of
   "lambda" -> case exprs of
     [List args, body] -> Lam <$> mapM parseIdentifier args <*> translate body
     _ -> syntaxError
@@ -52,9 +52,21 @@ parseKeyword name exprs = case name of
     [c, t, f] -> If0 <$> translate c <*> translate t <*> translate f
     _ -> syntaxError
 
-  _ -> fail $ "Unknown keyword: " ++ name
+  "+" -> parseBinOp Add
+  "-" -> parseBinOp Sub
+  "*" -> parseBinOp Mul
+  "/" -> parseBinOp Div
+  "%" -> parseBinOp Mod
+
+  _ -> fail $ "Unknown keyword: " ++ keyword
   where
-    syntaxError = fail $ "Invalid syntax in " ++ name ++ " expression"
+    syntaxError :: MonadFail m => m a
+    syntaxError = fail $ "Invalid syntax in " ++ keyword ++ " expression"
+
+    parseBinOp :: MonadFail m => BinOp -> m Expr
+    parseBinOp op = case exprs of
+      [a, b] -> BinOp op <$> translate a <*> translate b
+      _ -> syntaxError
 
 
 parseIdentifier :: MonadFail m => Lisp -> m VarIdent
